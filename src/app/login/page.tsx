@@ -31,8 +31,6 @@ export default function LoginPage() {
         })
 
         if (authError) throw authError
-
-
         router.push('/onboarding')
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -41,7 +39,7 @@ export default function LoginPage() {
         })
 
         if (error) throw error
-        router.push('/dashboard')
+        router.push('/onboarding')
       }
     } catch (err: any) {
       setMessage(err.message || 'An error occurred during authentication.')
