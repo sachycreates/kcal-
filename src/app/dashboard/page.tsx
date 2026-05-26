@@ -67,7 +67,6 @@ export default function DashboardPage() {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       setProfile(data)
 
-      // Load today's logged meals
       const today = new Date().toISOString().split('T')[0]
       const { data: events } = await supabase
         .from('meal_events')
@@ -88,7 +87,7 @@ export default function DashboardPage() {
       setLoading(false)
     }
     loadProfile()
-  }, [router])
+  }, [])
 
   const toggleLog = async (meal: any, index: number) => {
     const today = new Date().toISOString().split('T')[0]
@@ -174,11 +173,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-300 mb-2">{meal.kcal} kcal</p>
-                  <button 
+                  <button
                     onClick={() => toggleLog(meal, i)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${logged[i] ? 'bg-green-500 text-black' : 'bg-white text-black hover:bg-gray-200'}`}
+                    className={`text-xs px-3 py-1 rounded-full border transition-all ${logged[i] ? 'border-green-500 text-green-400 bg-green-950' : 'border-gray-600 text-gray-400 hover:border-white hover:text-white'}`}
                   >
-                    {logged[i] ? 'Logged ✓' : 'Log Meal'}
+                    {logged[i] ? 'Logged ✓' : 'Log'}
                   </button>
                 </div>
               </div>
@@ -186,6 +185,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4">
+          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">KCAL is learning</p>
+          <p className="text-sm text-white">
+            Your plan is anchored to your <span className="font-semibold">{profile?.wake_time} wake time</span>. Log meals to help KCAL adapt tomorrow's plan.
+          </p>
+        </div>
+
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-black">
+        <div className="max-w-md mx-auto flex justify-around py-4">
+          <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center gap-1">
+            <span className="text-white text-xl">🏠</span>
+            <span className="text-xs text-white font-medium">Home</span>
+          </button>
+          <button onClick={() => router.push('/streaks')} className="flex flex-col items-center gap-1">
+            <span className="text-gray-500 text-xl">🔥</span>
+            <span className="text-xs text-gray-500">Streaks</span>
+          </button>
+          <button onClick={() => router.push('/settings')} className="flex flex-col items-center gap-1">
+            <span className="text-gray-500 text-xl">⚙️</span>
+            <span className="text-xs text-gray-500">Settings</span>
+          </button>
+        </div>
       </div>
     </div>
   )
