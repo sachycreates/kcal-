@@ -32,19 +32,6 @@ export default function LoginPage() {
 
         if (authError) throw authError
 
-        if (authData?.user) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: authData.user.id,
-                name: fullName, 
-                goal: '2000',   
-              },
-            ])
-
-          if (profileError) throw profileError
-        }
 
         router.push('/onboarding')
       } else {
