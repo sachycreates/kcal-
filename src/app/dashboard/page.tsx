@@ -177,7 +177,7 @@ export default function DashboardPage() {
                     onClick={() => toggleLog(meal, i)}
                     className={`text-xs px-3 py-1 rounded-full border transition-all ${logged[i] ? 'border-green-500 text-green-400 bg-green-950' : 'border-gray-600 text-gray-400 hover:border-white hover:text-white'}`}
                   >
-                    {logged[i] ? 'Logged ✓' : 'Log'}
+                    {logged[i] ? 'Logged ✓' : 'Log Meal'}
                   </button>
                 </div>
               </div>
