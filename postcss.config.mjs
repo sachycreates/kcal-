@@ -1,3 +1,4 @@
+```javascript
 const config = {
   plugins: {
     "@tailwindcss/postcss": {},
@@ -5,3 +6,5 @@ const config = {
 };
 
 export default config;
+
+```
