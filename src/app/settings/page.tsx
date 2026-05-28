@@ -33,6 +33,16 @@ export default function SettingsPage() {
     router.push('/login')
   }
 
+  const goalLabel = (goal: string) => {
+    const map: Record<string, string> = {
+      weight_loss: 'Lose weight',
+      build_muscle: 'Build muscle',
+      maintain: 'Maintain weight',
+      eat_healthier: 'Eat healthier',
+    }
+    return map[goal] ?? goal?.replace('_', ' ')
+  }
+
   const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
     <button
       onClick={onChange}
@@ -41,16 +51,6 @@ export default function SettingsPage() {
       <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${value ? 'left-7 bg-black' : 'left-1 bg-gray-400'}`} />
     </button>
   )
-
-  const goalLabel = (goal: string) => {
-    const map: Record<string, string> = {
-      lose_weight: 'Lose weight',
-      build_muscle: 'Build muscle',
-      maintain: 'Maintain weight',
-      eat_healthier: 'Eat healthier',
-    }
-    return map[goal] ?? goal?.replace('_', ' ')
-  }
 
   return (
     <div className="min-h-screen bg-black text-white pb-24">
@@ -80,15 +80,15 @@ export default function SettingsPage() {
               </div>
               <div className="bg-gray-800 rounded-xl px-3 py-2">
                 <p className="text-xs text-gray-500 mb-0.5">Daily target</p>
-                <p className="text-sm font-medium">{profile.calories_goal ?? '—'} kcal</p>
+                <p className="text-sm font-medium">{profile.daily_calorie_goal ?? '—'} kcal</p>
               </div>
               <div className="bg-gray-800 rounded-xl px-3 py-2">
-                <p className="text-xs text-gray-500 mb-0.5">Protein target</p>
-                <p className="text-sm font-medium">{profile.protein_goal ?? '—'}g</p>
+                <p className="text-xs text-gray-500 mb-0.5">Diet</p>
+                <p className="text-sm font-medium capitalize">{profile.diet_type?.replace('_', ' ') ?? '—'}</p>
               </div>
               <div className="bg-gray-800 rounded-xl px-3 py-2">
-                <p className="text-xs text-gray-500 mb-0.5">Activity</p>
-                <p className="text-sm font-medium capitalize">{profile.activity_level?.replace('_', ' ') ?? '—'}</p>
+                <p className="text-xs text-gray-500 mb-0.5">Wake time</p>
+                <p className="text-sm font-medium">{profile.wake_time ?? '—'}</p>
               </div>
             </div>
           </div>
@@ -177,4 +177,4 @@ export default function SettingsPage() {
       </div>
     </div>
   )
-  }
+}
