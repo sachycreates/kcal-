@@ -10,17 +10,12 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export default function SettingsPage() {
   const router = useRouter()
-  const [darkMode, setDarkMode] = useState(true)
   const [notifications, setNotifications] = useState(true)
   const [mealReminders, setMealReminders] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
   const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
-    // Always stay in dark mode for now
-    setDarkMode(true)
-    document.documentElement.classList.add('dark')
-
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -29,11 +24,6 @@ export default function SettingsPage() {
     }
     loadProfile()
   }, [])
-
-  const toggleDark = () => {
-    // Light mode coming soon
-    alert('Light mode coming soon!')
-  }
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -59,7 +49,6 @@ export default function SettingsPage() {
           <p className="text-gray-400 text-sm mt-1">Manage your KCAL experience.</p>
         </div>
 
-        {/* Profile card */}
         {profile && (
           <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
             <div className="flex items-center gap-4">
@@ -74,21 +63,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Appearance */}
-        <div className="mb-6">
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Appearance</p>
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 divide-y divide-gray-800">
-            <div className="flex items-center justify-between px-4 py-4">
-              <div>
-                <p className="text-sm font-medium">Dark mode</p>
-                <p className="text-xs text-gray-400 mt-0.5">Easy on the eyes</p>
-              </div>
-              <Toggle value={darkMode} onChange={toggleDark} />
-            </div>
-          </div>
-        </div>
-
-        {/* Notifications */}
         <div className="mb-6">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Notifications</p>
           <div className="rounded-2xl border border-gray-800 bg-gray-900 divide-y divide-gray-800">
@@ -109,7 +83,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Account */}
         <div className="mb-6">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Account</p>
           <div className="rounded-2xl border border-gray-800 bg-gray-900 divide-y divide-gray-800">
