@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
@@ -14,6 +14,26 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true)
   const [mealReminders, setMealReminders] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
+
+  useEffect(() => {
+    // Always stay in dark mode for now
+    setDarkMode(true)
+    document.documentElement.classList.add('dark')
+
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      setProfile(data)
+    }
+    loadProfile()
+  }, [])
+
+  const toggleDark = () => {
+    // Light mode coming soon
+    alert('Light mode coming soon!')
+  }
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -34,11 +54,25 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-black text-white pb-24">
       <div className="max-w-md mx-auto px-4 py-8">
 
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-gray-400 text-sm mt-1">Manage your KCAL experience.</p>
         </div>
+
+        {/* Profile card */}
+        {profile && (
+          <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold">
+                {profile.name?.[0]?.toUpperCase() || '?'}
+              </div>
+              <div>
+                <p className="font-semibold">{profile.name}</p>
+                <p className="text-sm text-gray-400">{profile.goal?.replace('_', ' ')}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Appearance */}
         <div className="mb-6">
@@ -49,7 +83,7 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">Dark mode</p>
                 <p className="text-xs text-gray-400 mt-0.5">Easy on the eyes</p>
               </div>
-              <Toggle value={darkMode} onChange={() => setDarkMode(!darkMode)} />
+              <Toggle value={darkMode} onChange={toggleDark} />
             </div>
           </div>
         </div>
@@ -98,7 +132,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Logout */}
         <button
           onClick={handleLogout}
           disabled={loggingOut}
@@ -109,19 +142,18 @@ export default function SettingsPage() {
 
       </div>
 
-      {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-black">
         <div className="max-w-md mx-auto flex justify-around py-4">
           <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center gap-1">
-            <span className="text-gray-500 text-xl">🏠</span>
+            <span className="text-xl">🏠</span>
             <span className="text-xs text-gray-500">Home</span>
           </button>
           <button onClick={() => router.push('/streaks')} className="flex flex-col items-center gap-1">
-            <span className="text-gray-500 text-xl">🔥</span>
+            <span className="text-xl">🔥</span>
             <span className="text-xs text-gray-500">Streaks</span>
           </button>
           <button onClick={() => router.push('/settings')} className="flex flex-col items-center gap-1">
-            <span className="text-white text-xl">⚙️</span>
+            <span className="text-xl">⚙️</span>
             <span className="text-xs text-white font-medium">Settings</span>
           </button>
         </div>
