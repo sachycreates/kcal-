@@ -14,11 +14,13 @@ export default function SettingsPage() {
   const [mealReminders, setMealReminders] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
   const [profile, setProfile] = useState<any>(null)
+  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      setEmail(user.email ?? null)
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       setProfile(data)
     }
@@ -40,6 +42,16 @@ export default function SettingsPage() {
     </button>
   )
 
+  const goalLabel = (goal: string) => {
+    const map: Record<string, string> = {
+      lose_weight: 'Lose weight',
+      build_muscle: 'Build muscle',
+      maintain: 'Maintain weight',
+      eat_healthier: 'Eat healthier',
+    }
+    return map[goal] ?? goal?.replace('_', ' ')
+  }
+
   return (
     <div className="min-h-screen bg-black text-white pb-24">
       <div className="max-w-md mx-auto px-4 py-8">
@@ -49,20 +61,50 @@ export default function SettingsPage() {
           <p className="text-gray-400 text-sm mt-1">Manage your KCAL experience.</p>
         </div>
 
-        {profile && (
+        {/* Profile card */}
+        {profile ? (
           <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 rounded-full bg-gray-700 flex items-center justify-center text-xl font-bold">
                 {profile.name?.[0]?.toUpperCase() || '?'}
               </div>
               <div>
-                <p className="font-semibold">{profile.name}</p>
-                <p className="text-sm text-gray-400">{profile.goal?.replace('_', ' ')}</p>
+                <p className="font-semibold text-lg">{profile.name}</p>
+                {email && <p className="text-sm text-gray-400">{email}</p>}
+              </div>
+            </div>
+            <div className="border-t border-gray-800 pt-4 grid grid-cols-2 gap-3">
+              <div className="bg-gray-800 rounded-xl px-3 py-2">
+                <p className="text-xs text-gray-500 mb-0.5">Goal</p>
+                <p className="text-sm font-medium">{goalLabel(profile.goal)}</p>
+              </div>
+              <div className="bg-gray-800 rounded-xl px-3 py-2">
+                <p className="text-xs text-gray-500 mb-0.5">Daily target</p>
+                <p className="text-sm font-medium">{profile.calories_goal ?? '—'} kcal</p>
+              </div>
+              <div className="bg-gray-800 rounded-xl px-3 py-2">
+                <p className="text-xs text-gray-500 mb-0.5">Protein target</p>
+                <p className="text-sm font-medium">{profile.protein_goal ?? '—'}g</p>
+              </div>
+              <div className="bg-gray-800 rounded-xl px-3 py-2">
+                <p className="text-xs text-gray-500 mb-0.5">Activity</p>
+                <p className="text-sm font-medium capitalize">{profile.activity_level?.replace('_', ' ') ?? '—'}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gray-700" />
+              <div className="flex-1">
+                <div className="h-4 bg-gray-700 rounded w-1/2 mb-2" />
+                <div className="h-3 bg-gray-800 rounded w-2/3" />
               </div>
             </div>
           </div>
         )}
 
+        {/* Notifications */}
         <div className="mb-6">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Notifications</p>
           <div className="rounded-2xl border border-gray-800 bg-gray-900 divide-y divide-gray-800">
@@ -83,6 +125,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Account */}
         <div className="mb-6">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Account</p>
           <div className="rounded-2xl border border-gray-800 bg-gray-900 divide-y divide-gray-800">
@@ -115,6 +158,7 @@ export default function SettingsPage() {
 
       </div>
 
+      {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-black">
         <div className="max-w-md mx-auto flex justify-around py-4">
           <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center gap-1">
@@ -133,4 +177,4 @@ export default function SettingsPage() {
       </div>
     </div>
   )
-}
+  }
