@@ -24,10 +24,12 @@ const steps = [
     type: "choice",
     field: "diet_type",
     options: [
-      { label: "Everything", value: "non-veg" },
+      { label: "Everything — meat, fish, eggs", value: "non-veg" },
       { label: "Vegetarian", value: "vegetarian" },
+      { label: "Eggetarian — veg + eggs", value: "eggetarian" },
+      { label: "Pescatarian — veg + fish & seafood", value: "pescatarian" },
       { label: "Vegan", value: "vegan" },
-      { label: "Plant-based. No onion, garlic or roots.", value: "jain-style" },
+      { label: "Jain — no onion, garlic or roots", value: "jain-style" },
     ],
   },
   {
@@ -47,7 +49,7 @@ const steps = [
     id: 4,
     question: "Any health conditions we should know about?",
     subtitle: "We'll make sure your meals work for you, not against you.",
-    type: "multi",
+    type: "multi_with_custom",
     field: "health_conditions",
     optional: true,
     options: [
@@ -65,7 +67,7 @@ const steps = [
     id: 5,
     question: "Any allergies or ingredients to avoid?",
     subtitle: "Pick all that apply. We'll keep these out of your meals.",
-    type: "multi",
+    type: "multi_with_custom",
     field: "allergies",
     optional: true,
     options: [
@@ -107,6 +109,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [customInputs, setCustomInputs] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -150,36 +153,44 @@ export default function OnboardingPage() {
     setAnswers({ ...answers, [step.field]: value })
   }
 
-  const toggleMulti = (value: string) => {
+  const toggleMulti = (value: string, maxSelect = 6) => {
     const current: string[] = answers[step.field] || []
     const isNone = value === 'none'
-    const hasNone = current.includes('none')
-
     if (isNone) {
       updateAnswer(current.includes('none') ? [] : ['none'])
       return
     }
-    if (hasNone) {
-      updateAnswer([value])
-      return
+    const withoutNone = current.filter(v => v !== 'none')
+    if (withoutNone.includes(value)) {
+      updateAnswer(withoutNone.filter(v => v !== value))
+    } else if (withoutNone.length < maxSelect) {
+      updateAnswer([...withoutNone, value])
     }
-    const maxSelect = step.field === 'barriers' ? 2 : 6
-    if (current.includes(value)) {
-      updateAnswer(current.filter((v) => v !== value))
-    } else if (current.length < maxSelect) {
-      updateAnswer([...current, value])
+  }
+
+  const addCustomValue = (field: string) => {
+    const custom = customInputs[field]?.trim()
+    if (!custom) return
+    const current: string[] = answers[field] || []
+    const customValue = `custom:${custom}`
+    if (!current.includes(customValue)) {
+      setAnswers({ ...answers, [field]: [...current.filter(v => v !== 'none'), customValue] })
     }
+    setCustomInputs({ ...customInputs, [field]: '' })
+  }
+
+  const removeCustomValue = (field: string, val: string) => {
+    const current: string[] = answers[field] || []
+    setAnswers({ ...answers, [field]: current.filter(v => v !== val) })
   }
 
   const canProceed = () => {
     if ((step as any).optional) return true
     const val = answers[step.field]
     if (!val) return false
-    if (step.type === 'multi') return val.length > 0
+    if (step.type === 'multi' || step.type === 'multi_with_custom') return val.length > 0
     return val.toString().trim() !== ''
   }
-
-  const progressPercent = ((currentStep) / (steps.length - 1)) * 100
 
   return (
     <div className="flex min-h-screen flex-col bg-black px-4 py-10">
@@ -198,14 +209,12 @@ export default function OnboardingPage() {
         </div>
         <p className="text-xs text-gray-600 mb-10">Step {currentStep + 1} of {steps.length}</p>
 
-        {/* Question */}
         <h1 className="mb-2 text-3xl font-bold text-white leading-tight">{step.question}</h1>
         <p className="mb-8 text-gray-500 text-sm leading-relaxed">{step.subtitle}</p>
         {(step as any).optional && (
           <p className="text-xs text-gray-600 mb-4 -mt-4">Optional — tap Skip if not applicable</p>
         )}
 
-        {/* Inputs */}
         {step.type === 'text' && (
           <input
             type="text"
@@ -251,6 +260,29 @@ export default function OnboardingPage() {
               return (
                 <button
                   key={opt.value}
+                  onClick={() => toggleMulti(opt.value, 2)}
+                  className={`w-full rounded-xl border px-4 py-4 text-left transition-all text-sm flex items-center justify-between ${
+                    isSelected
+                      ? 'border-white bg-white text-black font-semibold'
+                      : 'border-gray-800 bg-gray-950 text-gray-300 hover:border-gray-600'
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {isSelected && <span className="text-xs">✓</span>}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {step.type === 'multi_with_custom' && (
+          <div className="space-y-3">
+            {step.options!.map((opt) => {
+              const selected: string[] = answers[step.field] || []
+              const isSelected = selected.includes(opt.value)
+              return (
+                <button
+                  key={opt.value}
                   onClick={() => toggleMulti(opt.value)}
                   className={`w-full rounded-xl border px-4 py-4 text-left transition-all text-sm flex items-center justify-between ${
                     isSelected
@@ -259,16 +291,43 @@ export default function OnboardingPage() {
                   }`}
                 >
                   <span>{opt.label}</span>
-                  {isSelected && <span className="text-black text-xs">✓</span>}
+                  {isSelected && <span className="text-xs">✓</span>}
                 </button>
               )
             })}
+
+            {/* Custom tags */}
+            {((answers[step.field] || []) as string[])
+              .filter((v: string) => v.startsWith('custom:'))
+              .map((v: string) => (
+                <div key={v} className="flex items-center justify-between rounded-xl border border-gray-600 bg-gray-900 px-4 py-3">
+                  <span className="text-sm text-white">{v.replace('custom:', '')}</span>
+                  <button onClick={() => removeCustomValue(step.field, v)} className="text-gray-500 hover:text-white text-xs ml-2">✕</button>
+                </div>
+              ))}
+
+            {/* Custom input */}
+            <div className="flex gap-2 mt-1">
+              <input
+                type="text"
+                className="flex-1 rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-white placeholder-gray-700 focus:outline-none focus:border-gray-500 text-sm"
+                placeholder="Type something else..."
+                value={customInputs[step.field] || ''}
+                onChange={(e) => setCustomInputs({ ...customInputs, [step.field]: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && addCustomValue(step.field)}
+              />
+              <button
+                onClick={() => addCustomValue(step.field)}
+                className="rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white text-sm hover:border-gray-500 transition-all"
+              >
+                Add
+              </button>
+            </div>
           </div>
         )}
 
         {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
 
-        {/* Actions */}
         <div className="mt-8 flex gap-3">
           {(step as any).optional && (
             <button
