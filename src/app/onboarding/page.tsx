@@ -104,6 +104,22 @@ const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'
 const MINUTES = ['00', '15', '30', '45']
 const PERIODS = ['AM', 'PM']
 
+// Warm palette
+const C = {
+  bg: '#F8F5EF',
+  card: '#FFFFFF',
+  cocoa: '#5B4636',
+  cocoaLight: '#7A6050',
+  peach: '#FFB38A',
+  peachDeep: '#E8935A',
+  butter: '#FFD86B',
+  sage: '#8EA889',
+  border: '#E8E2D9',
+  borderFocus: '#FFB38A',
+  muted: '#A89880',
+  textLight: '#C4B8A8',
+}
+
 function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const parseTime = (t: string) => {
     if (!t) return { hour: '06', minute: '00', period: 'AM' }
@@ -133,11 +149,14 @@ function TimePicker({ value, onChange }: { value: string; onChange: (v: string) 
         <button
           key={item}
           onClick={() => onSelect(item)}
-          className={`snap-center w-16 h-10 rounded-lg text-base font-semibold transition-all flex-shrink-0 ${
-            selected === item
-              ? 'bg-white text-black scale-110'
-              : 'text-gray-600 hover:text-gray-300'
-          }`}
+          style={{
+            background: selected === item ? C.cocoa : 'transparent',
+            color: selected === item ? '#FFF8F0' : C.muted,
+            transform: selected === item ? 'scale(1.08)' : 'scale(1)',
+            fontFamily: "'Sora', sans-serif",
+            fontWeight: selected === item ? 700 : 400,
+          }}
+          className="snap-center w-16 h-10 rounded-xl text-base transition-all flex-shrink-0"
         >
           {item}
         </button>
@@ -148,28 +167,24 @@ function TimePicker({ value, onChange }: { value: string; onChange: (v: string) 
 
   return (
     <div>
-      <div className="flex items-center justify-center gap-2 bg-gray-950 border border-gray-800 rounded-2xl p-4">
-        <ScrollCol
-          items={HOURS}
-          selected={hour}
-          onSelect={(h) => update(h, minute, period)}
-        />
-        <span className="text-2xl text-gray-600 font-light mb-1">:</span>
-        <ScrollCol
-          items={MINUTES}
-          selected={minute}
-          onSelect={(m) => update(hour, m, period)}
-        />
-        <ScrollCol
-          items={PERIODS}
-          selected={period}
-          onSelect={(p) => update(hour, minute, p)}
-        />
+      <div
+        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: 16 }}
+        className="flex items-center justify-center gap-2"
+      >
+        <ScrollCol items={HOURS} selected={hour} onSelect={(h) => update(h, minute, period)} />
+        <span style={{ color: C.muted, fontSize: 24, fontWeight: 300 }}>:</span>
+        <ScrollCol items={MINUTES} selected={minute} onSelect={(m) => update(hour, m, period)} />
+        <ScrollCol items={PERIODS} selected={period} onSelect={(p) => update(hour, minute, p)} />
       </div>
-      <p className="text-xs text-gray-600 mt-3 text-center">Or type manually</p>
+      <p style={{ color: C.textLight, fontSize: 12, textAlign: 'center', marginTop: 12 }}>Or type manually</p>
       <input
         type="time"
-        className="mt-2 w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-white focus:outline-none focus:border-gray-500 text-sm transition-all"
+        style={{
+          marginTop: 8, width: '100%', borderRadius: 14,
+          border: `1px solid ${C.border}`, background: C.card,
+          padding: '12px 16px', color: C.cocoa, fontSize: 14,
+          outline: 'none', fontFamily: "'DM Sans', sans-serif",
+        }}
         onChange={(e) => {
           const [h, m] = e.target.value.split(':')
           const hNum = parseInt(h)
@@ -233,16 +248,13 @@ export default function OnboardingPage() {
     }
   }, [canProceed, loading, currentStep, answers, router])
 
-  // Spacebar to advance
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.code === 'Space' && e.target === document.body) {
         e.preventDefault()
         handleNext()
       }
-      if (e.code === 'Enter') {
-        handleNext()
-      }
+      if (e.code === 'Enter') handleNext()
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -283,66 +295,107 @@ export default function OnboardingPage() {
     setAnswers({ ...answers, [field]: current.filter(v => v !== val) })
   }
 
-  return (
-    <div className="flex min-h-screen flex-col bg-black px-4 py-10">
-      <div className="w-full max-w-md mx-auto flex-1 flex flex-col">
+  const ready = canProceed()
 
-        <div className="mb-2 flex gap-1">
+  return (
+    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: "'DM Sans', sans-serif", padding: '40px 16px' }}>
+
+      {/* Font import */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .option-btn:hover { border-color: ${C.peach} !important; }
+      `}</style>
+
+      <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Progress bar */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
           {steps.map((_, i) => (
             <div
               key={i}
-              className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${
-                i <= currentStep ? 'bg-white' : 'bg-gray-800'
-              }`}
+              style={{
+                height: 3, flex: 1, borderRadius: 2,
+                background: i <= currentStep ? C.peachDeep : C.border,
+                transition: 'background 0.4s ease',
+              }}
             />
           ))}
         </div>
-        <p className="text-xs text-gray-600 mb-10">Step {currentStep + 1} of {steps.length}</p>
+        <p style={{ fontSize: 12, color: C.muted, marginBottom: 40, fontFamily: "'Sora', sans-serif", letterSpacing: '0.04em' }}>
+          Step {currentStep + 1} of {steps.length}
+        </p>
 
-        <h1 className="mb-2 text-3xl font-bold text-white leading-tight">{step.question}</h1>
-        <p className="mb-8 text-gray-500 text-sm leading-relaxed italic">{step.subtitle}</p>
+        {/* Question */}
+        <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 28, fontWeight: 800, color: C.cocoa, lineHeight: 1.2, marginBottom: 8, letterSpacing: '-0.02em' }}>
+          {step.question}
+        </h1>
+        <p style={{ fontSize: 15, color: C.muted, fontStyle: 'italic', fontWeight: 300, marginBottom: 28, lineHeight: 1.6 }}>
+          {step.subtitle}
+        </p>
         {(step as any).optional && (
-          <p className="text-xs text-gray-600 mb-4 -mt-4">Optional — tap Skip if not applicable</p>
+          <p style={{ fontSize: 12, color: C.textLight, marginBottom: 16, marginTop: -12 }}>
+            Optional — tap Skip if not applicable
+          </p>
         )}
 
+        {/* TEXT INPUT */}
         {step.type === 'text' && (
           <input
             type="text"
             autoFocus
-            className="w-full rounded-xl border border-gray-800 bg-gray-950 px-4 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-gray-500 text-base transition-all"
             placeholder={step.placeholder}
             value={answers[step.field] || ''}
             onChange={(e) => updateAnswer(e.target.value)}
+            style={{
+              width: '100%', borderRadius: 16,
+              border: `1.5px solid ${answers[step.field] ? C.peachDeep : C.border}`,
+              background: C.card, padding: '16px 20px',
+              color: C.cocoa, fontSize: 16, outline: 'none',
+              fontFamily: "'DM Sans', sans-serif",
+              transition: 'border-color 0.2s',
+              boxShadow: answers[step.field] ? `0 0 0 4px rgba(255,179,138,0.15)` : 'none',
+            }}
           />
         )}
 
+        {/* TIME PICKER */}
         {step.type === 'time_picker' && (
-          <TimePicker
-            value={answers[step.field] || ''}
-            onChange={(v) => updateAnswer(v)}
-          />
+          <TimePicker value={answers[step.field] || ''} onChange={(v) => updateAnswer(v)} />
         )}
 
+        {/* SINGLE CHOICE */}
         {step.type === 'choice' && (
-          <div className="space-y-3">
-            {step.options!.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => updateAnswer(opt.value)}
-                className={`w-full rounded-xl border px-4 py-4 text-left transition-all text-sm ${
-                  answers[step.field] === opt.value
-                    ? 'border-white bg-white text-black font-semibold'
-                    : 'border-gray-800 bg-gray-950 text-gray-300 hover:border-gray-600'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {step.options!.map((opt) => {
+              const selected = answers[step.field] === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => updateAnswer(opt.value)}
+                  className="option-btn"
+                  style={{
+                    width: '100%', borderRadius: 14, textAlign: 'left',
+                    padding: '15px 20px', fontSize: 15, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s',
+                    border: selected ? `1.5px solid ${C.peachDeep}` : `1.5px solid ${C.border}`,
+                    background: selected ? C.peach : C.card,
+                    color: selected ? C.cocoa : C.cocoaLight,
+                    fontWeight: selected ? 600 : 400,
+                    boxShadow: selected ? `0 4px 16px rgba(255,179,138,0.3)` : 'none',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         )}
 
+        {/* MULTI SELECT */}
         {step.type === 'multi' && (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {step.options!.map((opt) => {
               const selected: string[] = answers[step.field] || []
               const isSelected = selected.includes(opt.value)
@@ -350,22 +403,30 @@ export default function OnboardingPage() {
                 <button
                   key={opt.value}
                   onClick={() => toggleMulti(opt.value, 2)}
-                  className={`w-full rounded-xl border px-4 py-4 text-left transition-all text-sm flex items-center justify-between ${
-                    isSelected
-                      ? 'border-white bg-white text-black font-semibold'
-                      : 'border-gray-800 bg-gray-950 text-gray-300 hover:border-gray-600'
-                  }`}
+                  className="option-btn"
+                  style={{
+                    width: '100%', borderRadius: 14, textAlign: 'left',
+                    padding: '15px 20px', fontSize: 15, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s',
+                    border: isSelected ? `1.5px solid ${C.peachDeep}` : `1.5px solid ${C.border}`,
+                    background: isSelected ? C.peach : C.card,
+                    color: isSelected ? C.cocoa : C.cocoaLight,
+                    fontWeight: isSelected ? 600 : 400,
+                    boxShadow: isSelected ? `0 4px 16px rgba(255,179,138,0.3)` : 'none',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}
                 >
                   <span>{opt.label}</span>
-                  {isSelected && <span className="text-xs">✓</span>}
+                  {isSelected && <span style={{ fontSize: 12, color: C.cocoa }}>✓</span>}
                 </button>
               )
             })}
           </div>
         )}
 
+        {/* MULTI WITH CUSTOM */}
         {step.type === 'multi_with_custom' && (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {step.options!.map((opt) => {
               const selected: string[] = answers[step.field] || []
               const isSelected = selected.includes(opt.value)
@@ -373,14 +434,21 @@ export default function OnboardingPage() {
                 <button
                   key={opt.value}
                   onClick={() => toggleMulti(opt.value)}
-                  className={`w-full rounded-xl border px-4 py-4 text-left transition-all text-sm flex items-center justify-between ${
-                    isSelected
-                      ? 'border-white bg-white text-black font-semibold'
-                      : 'border-gray-800 bg-gray-950 text-gray-300 hover:border-gray-600'
-                  }`}
+                  className="option-btn"
+                  style={{
+                    width: '100%', borderRadius: 14, textAlign: 'left',
+                    padding: '15px 20px', fontSize: 15, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s',
+                    border: isSelected ? `1.5px solid ${C.peachDeep}` : `1.5px solid ${C.border}`,
+                    background: isSelected ? C.peach : C.card,
+                    color: isSelected ? C.cocoa : C.cocoaLight,
+                    fontWeight: isSelected ? 600 : 400,
+                    boxShadow: isSelected ? `0 4px 16px rgba(255,179,138,0.3)` : 'none',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}
                 >
                   <span>{opt.label}</span>
-                  {isSelected && <span className="text-xs">✓</span>}
+                  {isSelected && <span style={{ fontSize: 12, color: C.cocoa }}>✓</span>}
                 </button>
               )
             })}
@@ -388,24 +456,32 @@ export default function OnboardingPage() {
             {((answers[step.field] || []) as string[])
               .filter((v: string) => v.startsWith('custom:'))
               .map((v: string) => (
-                <div key={v} className="flex items-center justify-between rounded-xl border border-gray-600 bg-gray-900 px-4 py-3">
-                  <span className="text-sm text-white">{v.replace('custom:', '')}</span>
-                  <button onClick={() => removeCustomValue(step.field, v)} className="text-gray-500 hover:text-white text-xs ml-2">✕</button>
+                <div key={v} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 14, border: `1.5px solid ${C.sage}`, background: '#F0F5EF', padding: '12px 20px' }}>
+                  <span style={{ fontSize: 14, color: C.cocoa }}>{v.replace('custom:', '')}</span>
+                  <button onClick={() => removeCustomValue(step.field, v)} style={{ color: C.muted, fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
                 </div>
               ))}
 
-            <div className="flex gap-2 mt-1">
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <input
                 type="text"
-                className="flex-1 rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-white placeholder-gray-700 focus:outline-none focus:border-gray-500 text-sm"
                 placeholder="Type something else..."
                 value={customInputs[step.field] || ''}
                 onChange={(e) => setCustomInputs({ ...customInputs, [step.field]: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && addCustomValue(step.field)}
+                style={{
+                  flex: 1, borderRadius: 14, border: `1.5px solid ${C.border}`,
+                  background: C.card, padding: '12px 16px', color: C.cocoa,
+                  fontSize: 14, outline: 'none', fontFamily: "'DM Sans', sans-serif",
+                }}
               />
               <button
                 onClick={() => addCustomValue(step.field)}
-                className="rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white text-sm hover:border-gray-500 transition-all"
+                style={{
+                  borderRadius: 14, border: `1.5px solid ${C.border}`,
+                  background: C.card, padding: '12px 20px', color: C.cocoaLight,
+                  fontSize: 14, cursor: 'pointer', fontFamily: "'Sora', sans-serif", fontWeight: 600,
+                }}
               >
                 Add
               </button>
@@ -413,24 +489,38 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
+        {error && <p style={{ marginTop: 16, color: '#C0392B', fontSize: 14 }}>{error}</p>}
 
-        <div className="mt-8 flex gap-3">
+        {/* BUTTONS */}
+        <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
           {(step as any).optional && (
             <button
               onClick={() => {
                 setAnswers({ ...answers, [step.field]: [] })
                 if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1)
               }}
-              className="flex-1 rounded-xl border border-gray-800 px-4 py-4 text-gray-500 text-sm hover:border-gray-600 transition-all"
+              style={{
+                flex: 1, borderRadius: 14, border: `1.5px solid ${C.border}`,
+                padding: '15px 20px', color: C.muted, fontSize: 14,
+                background: 'transparent', cursor: 'pointer',
+                fontFamily: "'Sora', sans-serif", fontWeight: 500,
+              }}
             >
               Skip
             </button>
           )}
           <button
             onClick={handleNext}
-            disabled={!canProceed() || loading}
-            className="flex-1 rounded-xl bg-white px-4 py-4 font-semibold text-black disabled:opacity-20 hover:bg-gray-100 transition-all text-sm"
+            disabled={!ready || loading}
+            style={{
+              flex: 1, borderRadius: 14, border: 'none',
+              padding: '15px 20px', fontSize: 15, cursor: ready ? 'pointer' : 'not-allowed',
+              fontFamily: "'Sora', sans-serif", fontWeight: 700,
+              background: ready ? C.cocoa : C.border,
+              color: ready ? '#FFF8F0' : C.muted,
+              transition: 'all 0.2s',
+              boxShadow: ready ? `0 4px 20px rgba(91,70,54,0.25)` : 'none',
+            }}
           >
             {loading ? 'Saving...' : currentStep === steps.length - 1 ? "Let's go →" : "Continue →"}
           </button>
@@ -439,13 +529,15 @@ export default function OnboardingPage() {
         {currentStep > 0 && (
           <button
             onClick={() => setCurrentStep(currentStep - 1)}
-            className="mt-4 text-center text-xs text-gray-700 hover:text-gray-500 transition-all"
+            style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: C.textLight, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
           >
             ← Back
           </button>
         )}
 
-        <p className="mt-6 text-center text-xs text-gray-800">Press Space or Enter to continue</p>
+        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: C.textLight }}>
+          Press Space or Enter to continue
+        </p>
 
       </div>
     </div>
