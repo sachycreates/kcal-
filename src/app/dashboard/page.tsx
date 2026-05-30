@@ -109,14 +109,12 @@ function getMealTiming(wakeTime: string, mealIndex: number) {
   if (period === 'PM' && h !== 12) hours = h + 12
   if (period === 'AM' && h === 12) hours = 0
   const wakeMinutes = hours * 60 + (m || 0)
-
   const offsets = [
     { orderBy: 0, delivery: 30 },
     { orderBy: 210, delivery: 240 },
     { orderBy: 390, delivery: 420 },
     { orderBy: 690, delivery: 720 },
   ]
-
   const fmt = (mins: number) => {
     const total = (wakeMinutes + mins) % (24 * 60)
     const hh = Math.floor(total / 60)
@@ -125,7 +123,6 @@ function getMealTiming(wakeTime: string, mealIndex: number) {
     const h12 = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh
     return `${h12}:${mm.toString().padStart(2, '0')} ${ap}`
   }
-
   return {
     orderBy: fmt(offsets[mealIndex].orderBy),
     delivery: fmt(offsets[mealIndex].delivery),
@@ -166,7 +163,6 @@ export default function DashboardPage() {
   const firstName = profile?.name?.split(' ')[0] || 'there'
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-
   const selectedMeals = meals.filter((_, i) => selected[i])
   const totalKcal = selectedMeals.reduce((s, m) => s + m.kcal, 0)
   const totalProtein = selectedMeals.reduce((s, m) => s + m.protein, 0)
@@ -179,15 +175,7 @@ export default function DashboardPage() {
 
   const swapMeal = (mealIndex: number, alt: any) => {
     const updated = [...meals]
-    const oldMeal = updated[mealIndex]
-    updated[mealIndex] = {
-      ...oldMeal,
-      name: alt.name,
-      kcal: alt.kcal,
-      protein: alt.protein,
-      carbs: alt.carbs,
-      price: alt.price,
-    }
+    updated[mealIndex] = { ...updated[mealIndex], ...alt }
     setMeals(updated)
     setSwapIndex(null)
   }
@@ -252,7 +240,6 @@ export default function DashboardPage() {
             const timing = getMealTiming(profile?.wake_time || '07:00 AM', i)
             const isSelected = selected[i]
             const isSwapping = swapIndex === i
-
             return (
               <div key={i}>
                 <div
@@ -276,7 +263,6 @@ export default function DashboardPage() {
                           <span className="text-[10px] text-[#7a6f65]">{meal.protein}g protein</span>
                           <span className="text-[10px] text-[#7a6f65]">{meal.carbs}g carbs</span>
                         </div>
-                        {/* Timing */}
                         <div className="flex items-center gap-1">
                           <span className="text-[9px] text-[#3a3028]">⏰</span>
                           <span className="text-[9px] text-[#3a3028]">Order by {timing.orderBy} · Delivered by {timing.delivery}</span>
@@ -287,9 +273,7 @@ export default function DashboardPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); setSwapIndex(isSwapping ? null : i) }}
                           className={`mt-2 text-[10px] border rounded-full px-3 py-1 transition-all ${
-                            isSwapping
-                              ? 'border-[#c8714a] text-[#c8714a]'
-                              : 'text-[#5a5248] border-[#2a2520] hover:border-[#5a5248] hover:text-[#9a8f82]'
+                            isSwapping ? 'border-[#c8714a] text-[#c8714a]' : 'text-[#5a5248] border-[#2a2520] hover:border-[#5a5248] hover:text-[#9a8f82]'
                           }`}
                         >
                           {isSwapping ? 'Close' : 'Swap'}
@@ -299,7 +283,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Swap panel */}
                 {isSwapping && (
                   <div className="mt-2 bg-[#161310] border border-[#2a2520] rounded-2xl p-4">
                     <p className="text-[10px] text-[#5a5248] uppercase tracking-widest mb-3">Choose an alternative</p>
@@ -324,7 +307,7 @@ export default function DashboardPage() {
                         onClick={() => { setSwapIndex(null); router.push('/menu') }}
                         className="w-full text-left px-3 py-3 rounded-xl border border-dashed border-[#2a2520] hover:border-[#5a5248] transition-all"
                       >
-                        <span className="text-sm text-[#5a5248] hover:text-[#9a8f82]">Browse full menu →</span>
+                        <span className="text-sm text-[#5a5248]">Browse full menu →</span>
                       </button>
                     </div>
                   </div>
@@ -334,7 +317,6 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Order button */}
         <div className="mt-6">
           {selectedMeals.length > 0 ? (
             <button
@@ -386,7 +368,7 @@ export default function DashboardPage() {
                 No, go back
               </button>
               <button
-                onClick={() => { setConfirmOpen(false); router.push('/orders') }}
+                onClick={() => { setConfirmOpen(false); router.push('/orders?checkout=true') }}
                 className="flex-1 rounded-2xl bg-[#c8714a] py-4 text-white font-semibold text-sm hover:bg-[#b5623d] transition-all"
               >
                 Yes, place order
