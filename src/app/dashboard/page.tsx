@@ -8,206 +8,312 @@ const supabaseUrl = 'https://fyhpffdkmkehqjetjled.supabase.co'
 const supabaseAnonKey = 'sb_publishable_KtP6zWrdRDDUL-RhFz80Tg_Qa9XEnp2'
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-function getMeals(wakeTime: string, goal: string) {
-  const [hours, minutes] = wakeTime.split(':').map(Number)
-  const wake = hours * 60 + minutes
-
-  const toTimeString = (mins: number) => {
-    const h = Math.floor(mins / 60) % 24
-    const m = mins % 60
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    const display = h > 12 ? h - 12 : h === 0 ? 12 : h
-    return `${display}:${m.toString().padStart(2, '0')} ${ampm}`
-  }
-
-  const mealsByGoal: Record<string, any[]> = {
-    muscle: [
-      { label: 'Breakfast', time: wake + 30, name: 'Paneer Paratha + Curd', kcal: 520, protein: 24 },
-      { label: 'Lunch', time: wake + 270, name: 'Dal + Rice + Sabzi + Egg', kcal: 680, protein: 32 },
-      { label: 'Snack', time: wake + 420, name: 'Boiled Eggs + Banana', kcal: 220, protein: 14 },
-      { label: 'Dinner', time: 20 * 60, name: 'Chicken/Tofu Stir Fry + Roti', kcal: 580, protein: 36 },
-    ],
-    weight_loss: [
-      { label: 'Breakfast', time: wake + 30, name: 'Poha + Green Tea', kcal: 280, protein: 8 },
-      { label: 'Lunch', time: wake + 270, name: 'Salad + Dal + 1 Roti', kcal: 420, protein: 16 },
-      { label: 'Snack', time: wake + 420, name: 'Handful of Nuts + Fruit', kcal: 160, protein: 5 },
-      { label: 'Dinner', time: 20 * 60, name: 'Soup + Grilled Veggies', kcal: 320, protein: 12 },
-    ],
-    energy: [
-      { label: 'Breakfast', time: wake + 30, name: 'Banana + Peanut Butter Toast', kcal: 380, protein: 12 },
-      { label: 'Lunch', time: wake + 270, name: 'Rajma Rice + Salad', kcal: 540, protein: 20 },
-      { label: 'Snack', time: wake + 420, name: 'Dates + Almonds', kcal: 180, protein: 4 },
-      { label: 'Dinner', time: 20 * 60, name: 'Khichdi + Ghee', kcal: 460, protein: 16 },
-    ],
-    consistency: [
-      { label: 'Breakfast', time: wake + 30, name: 'Idli + Sambar', kcal: 320, protein: 10 },
-      { label: 'Lunch', time: wake + 270, name: 'Thali (Dal + Rice + Sabzi)', kcal: 580, protein: 18 },
-      { label: 'Snack', time: wake + 420, name: 'Sprouts Chaat', kcal: 180, protein: 8 },
-      { label: 'Dinner', time: 20 * 60, name: 'Roti + Sabzi + Curd', kcal: 480, protein: 15 },
-    ],
-  }
-
-  const meals = mealsByGoal[goal] || mealsByGoal.consistency
-  return meals.map(m => ({ ...m, timeString: toTimeString(m.time) }))
+const MEAL_DB: Record<string, any[]> = {
+  muscle: [
+    { label: 'Breakfast', name: 'Paneer Paratha with Curd', kcal: 520, protein: 24, carbs: 48, price: 130, alts: ['Quinoa Upma with Paneer Cubes', 'Moong Dal Chilla with Paneer'] },
+    { label: 'Lunch', name: 'Chicken Dal with Brown Rice', kcal: 680, protein: 42, carbs: 62, price: 180, alts: ['Grilled Chicken with Dal and Salad', 'Chicken Pulao with Raita'] },
+    { label: 'Snack', name: 'Chicken Tikka Skewers', kcal: 220, protein: 28, carbs: 6, price: 120, alts: ['Boiled Egg with Chaat Masala', 'Paneer Tikka Skewers'] },
+    { label: 'Dinner', name: 'Grilled Fish with Stir-Fried Vegetables', kcal: 480, protein: 38, carbs: 22, price: 200, alts: ['Egg and Spinach Curry with Roti', 'Chicken Stew with Brown Rice'] },
+  ],
+  weight_loss: [
+    { label: 'Breakfast', name: 'Moong Dal Chilla with Paneer', kcal: 280, protein: 18, carbs: 28, price: 110, alts: ['Ragi Idlis with Sambar', 'Sprouted Moong Salad with Peanuts'] },
+    { label: 'Lunch', name: 'Palak Paneer with 2 Rotis', kcal: 380, protein: 20, carbs: 42, price: 150, alts: ['Dal Tadka with Brown Rice', 'Soya Keema with Roti and Raita'] },
+    { label: 'Snack', name: 'Roasted Chana Chaat', kcal: 140, protein: 8, carbs: 22, price: 80, alts: ['Makhana with Ghee and Rock Salt', 'Sprouted Moong Chaat'] },
+    { label: 'Dinner', name: 'Moong Dal Soup with Roti', kcal: 300, protein: 16, carbs: 38, price: 120, alts: ['Palak Soup with Whole Wheat Toast', 'Dal Khichdi with Ghee'] },
+  ],
+  energy: [
+    { label: 'Breakfast', name: 'Besan Chilla with Chutney', kcal: 340, protein: 16, carbs: 38, price: 100, alts: ['Paneer Bhurji on Whole Wheat Toast', 'Tandoori Paneer Sandwich'] },
+    { label: 'Lunch', name: 'Rajma Chawal with Pickled Onions', kcal: 540, protein: 22, carbs: 72, price: 140, alts: ['Chole with Jeera Rice', 'Mixed Vegetable Khichdi with Ghee'] },
+    { label: 'Snack', name: 'Banana with Peanut Butter', kcal: 180, protein: 6, carbs: 28, price: 70, alts: ['Dates and Almonds', 'Multigrain Khakhra with Hummus'] },
+    { label: 'Dinner', name: 'Paneer and Vegetable Stir Fry with Quinoa', kcal: 420, protein: 24, carbs: 36, price: 170, alts: ['Methi Thepla with Curd', 'Baingan Bharta with Roti'] },
+  ],
+  consistency: [
+    { label: 'Breakfast', name: 'Ragi Idlis with Sambar', kcal: 300, protein: 12, carbs: 52, price: 100, alts: ['Besan Chilla with Chutney', 'Quinoa Upma with Paneer Cubes'] },
+    { label: 'Lunch', name: 'Dal Tadka with Brown Rice and Salad', kcal: 520, protein: 20, carbs: 68, price: 140, alts: ['Palak Paneer with 2 Rotis', 'Chole with Jeera Rice'] },
+    { label: 'Snack', name: 'Makhana with Ghee and Rock Salt', kcal: 150, protein: 5, carbs: 18, price: 80, alts: ['Roasted Chana Chaat', 'Sprouted Moong Chaat'] },
+    { label: 'Dinner', name: 'Roti with Sabzi and Curd', kcal: 440, protein: 16, carbs: 58, price: 130, alts: ['Dal Khichdi with Ghee', 'Moong Dal Soup with Roti'] },
+  ],
 }
+
+const MEAL_COLORS = ['#2d1e10', '#1a2e1e', '#2a1a2e', '#1e2a1a']
+const MEAL_ICONS = ['☀️', '🌿', '🍵', '🌙']
 
 export default function DashboardPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [logged, setLogged] = useState<Record<number, boolean>>({})
-  const [userId, setUserId] = useState<string>('')
+  const [selected, setSelected] = useState<Record<number, boolean>>({})
+  const [swapIndex, setSwapIndex] = useState<number | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [ordered, setOrdered] = useState(false)
 
   useEffect(() => {
-    const loadProfile = async () => {
+    const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      setUserId(user.id)
-
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       setProfile(data)
-
-      const today = new Date().toISOString().split('T')[0]
-      const { data: events } = await supabase
-        .from('meal_events')
-        .select('meal_label')
-        .eq('user_id', user.id)
-        .eq('logged_at', today)
-
-      if (events) {
-        const meals = getMeals(data?.wake_time || '07:00', data?.goal || 'consistency')
-        const loggedMap: Record<number, boolean> = {}
-        events.forEach(e => {
-          const idx = meals.findIndex(m => m.label === e.meal_label)
-          if (idx !== -1) loggedMap[idx] = true
-        })
-        setLogged(loggedMap)
-      }
-
       setLoading(false)
     }
-    loadProfile()
+    load()
   }, [])
 
-  const toggleLog = async (meal: any, index: number) => {
-    const today = new Date().toISOString().split('T')[0]
-    const isLogged = logged[index]
-
-    if (!isLogged) {
-      await supabase.from('meal_events').insert({
-        user_id: userId,
-        meal_label: meal.label,
-        meal_name: meal.name,
-        kcal: meal.kcal,
-        protein: meal.protein,
-        logged_at: today,
-      })
-    } else {
-      await supabase.from('meal_events')
-        .delete()
-        .eq('user_id', userId)
-        .eq('meal_label', meal.label)
-        .eq('logged_at', today)
-    }
-
-    setLogged(prev => ({ ...prev, [index]: !isLogged }))
-  }
-
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
-      <p className="text-gray-400">Loading your plan...</p>
+    <div className="flex min-h-screen items-center justify-center bg-[#0e0c0a]">
+      <div className="text-center">
+        <div className="w-8 h-8 border border-[#c8714a] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-[#5a5248] text-sm">Curating your plan...</p>
+      </div>
     </div>
   )
 
-  const meals = getMeals(profile?.wake_time || '07:00', profile?.goal || 'consistency')
-  const totalKcal = meals.reduce((sum, m) => sum + m.kcal, 0)
-  const totalProtein = meals.reduce((sum, m) => sum + m.protein, 0)
-  const loggedKcal = meals.filter((_, i) => logged[i]).reduce((sum, m) => sum + m.kcal, 0)
-  const loggedProtein = meals.filter((_, i) => logged[i]).reduce((sum, m) => sum + m.protein, 0)
+  const goal = profile?.goal || 'consistency'
+  const meals = MEAL_DB[goal] || MEAL_DB.consistency
   const firstName = profile?.name?.split(' ')[0] || 'there'
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const caloriePercent = Math.min(Math.round((loggedKcal / totalKcal) * 100), 100)
-  const proteinPercent = Math.min(Math.round((loggedProtein / totalProtein) * 100), 100)
+
+  const selectedMeals = meals.filter((_, i) => selected[i])
+  const totalKcal = selectedMeals.reduce((s, m) => s + m.kcal, 0)
+  const totalProtein = selectedMeals.reduce((s, m) => s + m.protein, 0)
+  const totalCarbs = selectedMeals.reduce((s, m) => s + m.carbs, 0)
+  const totalPrice = selectedMeals.reduce((s, m) => s + m.price, 0)
+
+  const dayKcal = meals.reduce((s, m) => s + m.kcal, 0)
+  const kcalPercent = Math.round((totalKcal / dayKcal) * 100)
+  const circumference = 2 * Math.PI * 36
+  const strokeDash = (kcalPercent / 100) * circumference
+
+  const toggleSelect = (i: number) => {
+    setSelected(prev => ({ ...prev, [i]: !prev[i] }))
+  }
+
+  const swapMeal = (index: number, altName: string) => {
+    // In real app this would update the curated plan
+    setSwapIndex(null)
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
-      <div className="max-w-md mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0e0c0a] text-white pb-28">
 
-        <div className="mb-6">
-          <p className="text-gray-400 text-sm">{greeting}</p>
-          <h1 className="text-3xl font-bold">{firstName} 👋</h1>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-4">Today's breakdown</p>
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-white font-medium">Calories</span>
-              <span className="text-gray-400">{loggedKcal} / {totalKcal} kcal</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-700">
-              <div className="h-2 rounded-full bg-white transition-all" style={{ width: `${caloriePercent}%` }} />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-white font-medium">Protein</span>
-              <span className="text-gray-400">{loggedProtein}g / {totalProtein}g</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-700">
-              <div className="h-2 rounded-full bg-green-400 transition-all" style={{ width: `${proteinPercent}%` }} />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4">Today's meals</h2>
-          <div className="space-y-3">
-            {meals.map((meal, i) => (
-              <div key={i} className={`flex items-center justify-between rounded-2xl border px-4 py-4 transition-all ${logged[i] ? 'border-green-500 bg-green-950' : 'border-gray-800 bg-gray-900'}`}>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">{meal.label} · {meal.timeString}</p>
-                  <p className="text-sm font-medium">{meal.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{meal.protein}g protein</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-300 mb-2">{meal.kcal} kcal</p>
-                  <button
-                    onClick={() => toggleLog(meal, i)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-all ${logged[i] ? 'border-green-500 text-green-400 bg-green-950' : 'border-gray-600 text-gray-400 hover:border-white hover:text-white'}`}
-                  >
-                    {logged[i] ? 'Logged ✓' : 'Log Meal'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4">
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">KCAL is learning</p>
-          <p className="text-sm text-white">
-            Your plan is anchored to your <span className="font-semibold">{profile?.wake_time} wake time</span>. Log meals to help KCAL adapt tomorrow's plan.
-          </p>
-        </div>
-
+      {/* Header */}
+      <div className="px-5 pt-10 pb-4 max-w-md mx-auto">
+        <p className="text-[#7a6f65] text-xs tracking-widest uppercase mb-1">{greeting}</p>
+        <h1 className="text-3xl font-bold text-[#f0ebe4]">{firstName} 👋</h1>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-black">
+      {/* Calorie ring + macros */}
+      <div className="mx-5 max-w-md mx-auto mb-6">
+        <div className="bg-[#161310] border border-[#252118] rounded-2xl p-5 flex items-center gap-5">
+          <div className="relative w-24 h-24 flex-shrink-0">
+            <svg viewBox="0 0 80 80" className="w-24 h-24 -rotate-90">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="#252118" strokeWidth="5" />
+              <circle
+                cx="40" cy="40" r="36" fill="none"
+                stroke="#c8714a" strokeWidth="5"
+                strokeDasharray={`${strokeDash} ${circumference}`}
+                strokeLinecap="round"
+                className="transition-all duration-700"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-lg font-bold text-[#f0ebe4]">{kcalPercent}%</span>
+              <span className="text-[10px] text-[#7a6f65]">selected</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] text-[#5a5248] uppercase tracking-widest mb-3">Today's nutrition</p>
+            <div className="space-y-2">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-[#9a8f82]">Calories</span>
+                  <span className="text-[#c8bfb5]">{totalKcal} / {dayKcal}</span>
+                </div>
+                <div className="h-1 bg-[#252118] rounded-full">
+                  <div className="h-1 bg-[#c8714a] rounded-full transition-all duration-700" style={{ width: `${kcalPercent}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-[#9a8f82]">Protein</span>
+                  <span className="text-[#c8bfb5]">{totalProtein}g</span>
+                </div>
+                <div className="h-1 bg-[#252118] rounded-full">
+                  <div className="h-1 bg-[#7a9e72] rounded-full transition-all duration-700" style={{ width: `${Math.min((totalProtein / 60) * 100, 100)}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-[#9a8f82]">Carbs</span>
+                  <span className="text-[#c8bfb5]">{totalCarbs}g</span>
+                </div>
+                <div className="h-1 bg-[#252118] rounded-full">
+                  <div className="h-1 bg-[#7a8fbe] rounded-full transition-all duration-700" style={{ width: `${Math.min((totalCarbs / 150) * 100, 100)}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Meals */}
+      <div className="px-5 max-w-md mx-auto">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] text-[#5a5248] uppercase tracking-widest">Today's curated meals</p>
+          {Object.values(selected).some(Boolean) && (
+            <p className="text-xs text-[#c8714a]">{Object.values(selected).filter(Boolean).length} selected · ₹{totalPrice}</p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {meals.map((meal, i) => (
+            <div key={i}>
+              <div
+                onClick={() => toggleSelect(i)}
+                className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer ${
+                  selected[i]
+                    ? 'border-[#c8714a] bg-[#1e1410]'
+                    : 'border-[#252118] bg-[#161310]'
+                }`}
+              >
+                {/* Meal color band */}
+                <div className="h-1 w-full" style={{ background: selected[i] ? '#c8714a' : MEAL_COLORS[i] }} />
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm">{MEAL_ICONS[i]}</span>
+                        <span className="text-[10px] text-[#5a5248] uppercase tracking-widest">{meal.label}</span>
+                        {selected[i] && <span className="text-[10px] text-[#c8714a]">✓ Selected</span>}
+                      </div>
+                      <p className="text-sm font-semibold text-[#e8e0d5] leading-snug">{meal.name}</p>
+                      <div className="flex gap-3 mt-2">
+                        <span className="text-[10px] text-[#7a6f65]">{meal.kcal} kcal</span>
+                        <span className="text-[10px] text-[#7a6f65]">{meal.protein}g protein</span>
+                        <span className="text-[10px] text-[#7a6f65]">{meal.carbs}g carbs</span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-3 flex-shrink-0">
+                      <p className="text-sm font-semibold text-[#c8bfb5]">₹{meal.price}</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSwapIndex(i) }}
+                        className="mt-2 text-[10px] text-[#5a5248] border border-[#2a2520] rounded-full px-3 py-1 hover:border-[#5a5248] hover:text-[#9a8f82] transition-all"
+                      >
+                        Swap
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Swap panel */}
+              {swapIndex === i && (
+                <div className="mt-2 bg-[#161310] border border-[#2a2520] rounded-2xl p-4">
+                  <p className="text-[10px] text-[#5a5248] uppercase tracking-widest mb-3">Choose an alternative</p>
+                  <div className="space-y-2">
+                    {meal.alts.map((alt: string, j: number) => (
+                      <button
+                        key={j}
+                        onClick={() => swapMeal(i, alt)}
+                        className="w-full text-left text-sm text-[#c8bfb5] px-3 py-3 rounded-xl border border-[#252118] hover:border-[#c8714a] hover:text-[#f0ebe4] transition-all"
+                      >
+                        {alt}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setSwapIndex(null)}
+                    className="mt-3 text-xs text-[#5a5248] hover:text-[#9a8f82] transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Order button — always visible */}
+        <div className="mt-6">
+          {Object.values(selected).some(Boolean) ? (
+            <button
+              onClick={() => setConfirmOpen(true)}
+              className="w-full bg-[#c8714a] text-white rounded-2xl py-4 font-semibold text-sm hover:bg-[#b5623d] transition-all"
+            >
+              Order {Object.values(selected).filter(Boolean).length} meal{Object.values(selected).filter(Boolean).length > 1 ? 's' : ''} · ₹{totalPrice}
+            </button>
+          ) : (
+            <button
+              disabled
+              className="w-full bg-[#1c1916] text-[#5a5248] rounded-2xl py-4 font-semibold text-sm border border-[#252118] cursor-default"
+            >
+              Select meals to order
+            </button>
+          )}
+        </div>
+
+        {/* KCAL note */}
+        <div className="mt-4 mb-6 px-4 py-3 rounded-xl bg-[#161310] border border-[#252118]">
+          <p className="text-[10px] text-[#5a5248] leading-relaxed">
+            Curated for your <span className="text-[#9a8f82]">{goal.replace('_', ' ')}</span> goal · Based on your wake time of <span className="text-[#9a8f82]">{profile?.wake_time || '—'}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Confirm dialog */}
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="w-full max-w-md bg-[#161310] border border-[#252118] rounded-t-3xl p-6 pb-10">
+            <div className="w-10 h-1 bg-[#3a3028] rounded-full mx-auto mb-6" />
+            <h2 className="text-xl font-bold text-[#f0ebe4] mb-1">Confirm your order?</h2>
+            <p className="text-sm text-[#7a6f65] mb-6">
+              {Object.values(selected).filter(Boolean).length} meal{Object.values(selected).filter(Boolean).length > 1 ? 's' : ''} · ₹{totalPrice} total
+            </p>
+            <div className="space-y-2 mb-6">
+              {meals.filter((_, i) => selected[i]).map((m, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-[#9a8f82]">{m.label} — {m.name}</span>
+                  <span className="text-[#c8bfb5]">₹{m.price}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 rounded-2xl border border-[#2a2520] py-4 text-[#7a6f65] text-sm hover:border-[#5a5248] transition-all"
+              >
+                No, go back
+              </button>
+              <button
+                onClick={() => { setConfirmOpen(false); setOrdered(true); router.push('/orders') }}
+                className="flex-1 rounded-2xl bg-[#c8714a] py-4 text-white font-semibold text-sm hover:bg-[#b5623d] transition-all"
+              >
+                Yes, place order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom nav */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1e1b18] bg-[#0e0c0a]">
         <div className="max-w-md mx-auto flex justify-around py-4">
-          <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center gap-1">
-            <span className="text-white text-xl">🏠</span>
-            <span className="text-xs text-white font-medium">Home</span>
-          </button>
-          <button onClick={() => router.push('/streaks')} className="flex flex-col items-center gap-1">
-            <span className="text-gray-500 text-xl">🔥</span>
-            <span className="text-xs text-gray-500">Streaks</span>
-          </button>
-          <button onClick={() => router.push('/settings')} className="flex flex-col items-center gap-1">
-            <span className="text-gray-500 text-xl">⚙️</span>
-            <span className="text-xs text-gray-500">Settings</span>
-          </button>
+          {[
+            { icon: '🏠', label: 'Home', path: '/dashboard' },
+            { icon: '📦', label: 'Orders', path: '/orders' },
+            { icon: '🔥', label: 'Journey', path: '/streaks' },
+            { icon: '⚙️', label: 'Settings', path: '/settings' },
+          ].map((item) => {
+            const active = item.path === '/dashboard'
+            return (
+              <button key={item.path} onClick={() => router.push(item.path)} className="flex flex-col items-center gap-1">
+                <span className="text-lg">{item.icon}</span>
+                <span className={`text-[10px] ${active ? 'text-[#c8714a]' : 'text-[#5a5248]'}`}>{item.label}</span>
+                {active && <div className="w-1 h-1 rounded-full bg-[#c8714a]" />}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>
