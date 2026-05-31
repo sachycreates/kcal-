@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { getTheme, light, dark, type Theme } from '@/lib/theme'
 
 const supabaseUrl = 'https://fyhpffdkmkehqjetjled.supabase.co'
 const supabaseAnonKey = 'sb_publishable_KtP6zWrdRDDUL-RhFz80Tg_Qa9XEnp2'
@@ -123,10 +124,33 @@ function getMealTiming(wakeTime: string, mealIndex: number) {
     const h12 = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh
     return `${h12}:${mm.toString().padStart(2, '0')} ${ap}`
   }
-  return {
-    orderBy: fmt(offsets[mealIndex].orderBy),
-    delivery: fmt(offsets[mealIndex].delivery),
-  }
+  return { orderBy: fmt(offsets[mealIndex].orderBy), delivery: fmt(offsets[mealIndex].delivery) }
+}
+
+function BottomNav({ t, active }: { t: Theme; active: string }) {
+  const router = useRouter()
+  const items = [
+    { icon: '🏠', label: 'Home', path: '/dashboard' },
+    { icon: '📦', label: 'Orders', path: '/orders' },
+    { icon: '🔥', label: 'Journey', path: '/streaks' },
+    { icon: '⚙️', label: 'Settings', path: '/settings' },
+  ]
+  return (
+    <div className="fixed bottom-0 left-0 right-0 border-t" style={{ background: t.navBg, borderColor: t.navBorder }}>
+      <div className="max-w-md mx-auto flex justify-around py-4">
+        {items.map((item) => {
+          const isActive = item.path === active
+          return (
+            <button key={item.path} onClick={() => router.push(item.path)} className="flex flex-col items-center gap-1">
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-[10px] transition-all" style={{ color: isActive ? t.accent : t.textTertiary, fontWeight: isActive ? 600 : 400 }}>{item.label}</span>
+              {isActive && <div className="w-1 h-1 rounded-full" style={{ background: t.accent }} />}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -137,8 +161,11 @@ export default function DashboardPage() {
   const [selected, setSelected] = useState<Record<number, boolean>>({})
   const [swapIndex, setSwapIndex] = useState<number | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [t, setT] = useState<Theme>(light)
 
   useEffect(() => {
+    const theme = getTheme()
+    setT(theme === 'dark' ? dark : light)
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
@@ -152,10 +179,10 @@ export default function DashboardPage() {
   }, [])
 
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0e0c0a]">
+    <div className="flex min-h-screen items-center justify-center" style={{ background: t.bg }}>
       <div className="text-center">
-        <div className="w-8 h-8 border border-[#c8714a] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-[#5a5248] text-sm">Curating your plan...</p>
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: t.accent, borderTopColor: 'transparent' }} />
+        <p className="text-sm" style={{ color: t.textSecondary }}>Curating your plan...</p>
       </div>
     </div>
   )
@@ -181,42 +208,42 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0e0c0a] text-white pb-28">
+    <div className="min-h-screen pb-28 transition-colors duration-300" style={{ background: t.bg }}>
 
       <div className="px-5 pt-10 pb-4 max-w-md mx-auto">
-        <p className="text-[#7a6f65] text-xs tracking-widest uppercase mb-1">{greeting}</p>
-        <h1 className="text-3xl font-bold text-[#f0ebe4]">{firstName} 👋</h1>
+        <p className="text-xs tracking-widest uppercase mb-1" style={{ color: t.textSecondary }}>{greeting}</p>
+        <h1 className="text-3xl font-bold" style={{ color: t.textPrimary }}>{firstName} 👋</h1>
       </div>
 
       {/* Nutrition ring */}
       <div className="px-5 max-w-md mx-auto mb-6">
-        <div className="bg-[#161310] border border-[#252118] rounded-2xl p-5 flex items-center gap-5">
+        <div className="rounded-2xl p-5 flex items-center gap-5 border" style={{ background: t.surface, borderColor: t.border }}>
           <div className="relative w-24 h-24 flex-shrink-0">
             <svg viewBox="0 0 80 80" className="w-24 h-24 -rotate-90">
-              <circle cx="40" cy="40" r="36" fill="none" stroke="#252118" strokeWidth="5" />
-              <circle cx="40" cy="40" r="36" fill="none" stroke="#c8714a" strokeWidth="5"
+              <circle cx="40" cy="40" r="36" fill="none" stroke={t.border} strokeWidth="5" />
+              <circle cx="40" cy="40" r="36" fill="none" stroke={t.accent} strokeWidth="5"
                 strokeDasharray={`${strokeDash} ${circumference}`} strokeLinecap="round"
                 className="transition-all duration-700" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold text-[#f0ebe4]">{kcalPercent}%</span>
-              <span className="text-[10px] text-[#7a6f65]">selected</span>
+              <span className="text-lg font-bold" style={{ color: t.textPrimary }}>{kcalPercent}%</span>
+              <span className="text-[10px]" style={{ color: t.textSecondary }}>selected</span>
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-[10px] text-[#5a5248] uppercase tracking-widest mb-3">Today's nutrition</p>
+            <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: t.textTertiary }}>Today's nutrition</p>
             <div className="space-y-2">
               {[
-                { label: 'Calories', val: `${totalKcal} / ${dayKcal}`, pct: kcalPercent, color: '#c8714a' },
-                { label: 'Protein', val: `${totalProtein}g`, pct: Math.min((totalProtein / 60) * 100, 100), color: '#7a9e72' },
-                { label: 'Carbs', val: `${totalCarbs}g`, pct: Math.min((totalCarbs / 150) * 100, 100), color: '#7a8fbe' },
+                { label: 'Calories', val: `${totalKcal} / ${dayKcal}`, pct: kcalPercent, color: t.accent },
+                { label: 'Protein', val: `${totalProtein}g`, pct: Math.min((totalProtein / 60) * 100, 100), color: t.sage },
+                { label: 'Carbs', val: `${totalCarbs}g`, pct: Math.min((totalCarbs / 150) * 100, 100), color: '#7A8FBE' },
               ].map(({ label, val, pct, color }) => (
                 <div key={label}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#9a8f82]">{label}</span>
-                    <span className="text-[#c8bfb5]">{val}</span>
+                    <span style={{ color: t.textSecondary }}>{label}</span>
+                    <span style={{ color: t.textPrimary }}>{val}</span>
                   </div>
-                  <div className="h-1 bg-[#252118] rounded-full">
+                  <div className="h-1 rounded-full" style={{ background: t.border }}>
                     <div className="h-1 rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
                   </div>
                 </div>
@@ -229,9 +256,9 @@ export default function DashboardPage() {
       {/* Meals */}
       <div className="px-5 max-w-md mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[10px] text-[#5a5248] uppercase tracking-widest">Today's curated meals</p>
+          <p className="text-[10px] uppercase tracking-widest" style={{ color: t.textTertiary }}>Today's curated meals</p>
           {selectedMeals.length > 0 && (
-            <p className="text-xs text-[#c8714a]">{selectedMeals.length} selected · ₹{totalPrice}</p>
+            <p className="text-xs font-medium" style={{ color: t.accent }}>{selectedMeals.length} selected · ₹{totalPrice}</p>
           )}
         </div>
 
@@ -244,37 +271,41 @@ export default function DashboardPage() {
               <div key={i}>
                 <div
                   onClick={() => { if (!isSwapping) setSelected(prev => ({ ...prev, [i]: !prev[i] })) }}
-                  className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer ${
-                    isSelected ? 'border-[#c8714a] bg-[#1e1410]' : 'border-[#252118] bg-[#161310]'
-                  }`}
+                  className="rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer"
+                  style={{
+                    background: isSelected ? (t === light ? '#FFF5EE' : '#1E1410') : t.surface,
+                    borderColor: isSelected ? t.accent : t.border,
+                  }}
                 >
-                  <div className="h-0.5 w-full transition-all duration-300" style={{ background: isSelected ? '#c8714a' : '#252118' }} />
+                  <div className="h-0.5 w-full transition-all duration-300" style={{ background: isSelected ? t.accent : t.border }} />
                   <div className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-sm">{MEAL_ICONS[i]}</span>
-                          <span className="text-[10px] text-[#5a5248] uppercase tracking-widest">{meal.label}</span>
-                          {isSelected && <span className="text-[10px] text-[#c8714a] font-medium">✓ Selected</span>}
+                          <span className="text-[10px] uppercase tracking-widest" style={{ color: t.textTertiary }}>{meal.label}</span>
+                          {isSelected && <span className="text-[10px] font-semibold" style={{ color: t.accent }}>✓ Selected</span>}
                         </div>
-                        <p className="text-sm font-semibold text-[#e8e0d5] leading-snug mb-2">{meal.name}</p>
+                        <p className="text-sm font-semibold leading-snug mb-2" style={{ color: t.textPrimary }}>{meal.name}</p>
                         <div className="flex gap-3 mb-2">
-                          <span className="text-[10px] text-[#7a6f65]">{meal.kcal} kcal</span>
-                          <span className="text-[10px] text-[#7a6f65]">{meal.protein}g protein</span>
-                          <span className="text-[10px] text-[#7a6f65]">{meal.carbs}g carbs</span>
+                          <span className="text-[10px]" style={{ color: t.textSecondary }}>{meal.kcal} kcal</span>
+                          <span className="text-[10px]" style={{ color: t.textSecondary }}>{meal.protein}g protein</span>
+                          <span className="text-[10px]" style={{ color: t.textSecondary }}>{meal.carbs}g carbs</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-[#3a3028]">⏰</span>
-                          <span className="text-[9px] text-[#3a3028]">Order by {timing.orderBy} · Delivered by {timing.delivery}</span>
+                          <span className="text-[9px]" style={{ color: t.textTertiary }}>⏰</span>
+                          <span className="text-[9px]" style={{ color: t.textTertiary }}>Order by {timing.orderBy} · Delivered by {timing.delivery}</span>
                         </div>
                       </div>
                       <div className="text-right ml-3 flex-shrink-0">
-                        <p className="text-sm font-semibold text-[#c8bfb5]">₹{meal.price}</p>
+                        <p className="text-sm font-semibold" style={{ color: t.textPrimary }}>₹{meal.price}</p>
                         <button
                           onClick={(e) => { e.stopPropagation(); setSwapIndex(isSwapping ? null : i) }}
-                          className={`mt-2 text-[10px] border rounded-full px-3 py-1 transition-all ${
-                            isSwapping ? 'border-[#c8714a] text-[#c8714a]' : 'text-[#5a5248] border-[#2a2520] hover:border-[#5a5248] hover:text-[#9a8f82]'
-                          }`}
+                          className="mt-2 text-[10px] border rounded-full px-3 py-1 transition-all"
+                          style={{
+                            borderColor: isSwapping ? t.accent : t.border,
+                            color: isSwapping ? t.accent : t.textSecondary,
+                          }}
                         >
                           {isSwapping ? 'Close' : 'Swap'}
                         </button>
@@ -284,30 +315,34 @@ export default function DashboardPage() {
                 </div>
 
                 {isSwapping && (
-                  <div className="mt-2 bg-[#161310] border border-[#2a2520] rounded-2xl p-4">
-                    <p className="text-[10px] text-[#5a5248] uppercase tracking-widest mb-3">Choose an alternative</p>
+                  <div className="mt-2 rounded-2xl border p-4" style={{ background: t.surface, borderColor: t.border }}>
+                    <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: t.textTertiary }}>Choose an alternative</p>
                     <div className="space-y-2">
                       {meal.alts.map((alt: any, j: number) => (
                         <button
                           key={j}
                           onClick={() => swapMeal(i, alt)}
-                          className="w-full text-left px-3 py-3 rounded-xl border border-[#252118] hover:border-[#c8714a] transition-all group"
+                          className="w-full text-left px-3 py-3 rounded-xl border transition-all"
+                          style={{ borderColor: t.border, background: 'transparent' }}
+                          onMouseEnter={e => (e.currentTarget.style.borderColor = t.accent)}
+                          onMouseLeave={e => (e.currentTarget.style.borderColor = t.border)}
                         >
                           <div className="flex justify-between items-start">
-                            <span className="text-sm text-[#c8bfb5] group-hover:text-[#f0ebe4] transition-all">{alt.name}</span>
-                            <span className="text-xs text-[#5a5248] ml-2 flex-shrink-0">₹{alt.price}</span>
+                            <span className="text-sm" style={{ color: t.textPrimary }}>{alt.name}</span>
+                            <span className="text-xs ml-2 flex-shrink-0" style={{ color: t.textSecondary }}>₹{alt.price}</span>
                           </div>
                           <div className="flex gap-3 mt-1">
-                            <span className="text-[9px] text-[#5a5248]">{alt.kcal} kcal</span>
-                            <span className="text-[9px] text-[#5a5248]">{alt.protein}g protein</span>
+                            <span className="text-[9px]" style={{ color: t.textTertiary }}>{alt.kcal} kcal</span>
+                            <span className="text-[9px]" style={{ color: t.textTertiary }}>{alt.protein}g protein</span>
                           </div>
                         </button>
                       ))}
                       <button
                         onClick={() => { setSwapIndex(null); router.push('/menu') }}
-                        className="w-full text-left px-3 py-3 rounded-xl border border-dashed border-[#2a2520] hover:border-[#5a5248] transition-all"
+                        className="w-full text-left px-3 py-3 rounded-xl border border-dashed transition-all"
+                        style={{ borderColor: t.border }}
                       >
-                        <span className="text-sm text-[#5a5248]">Browse full menu →</span>
+                        <span className="text-sm" style={{ color: t.textSecondary }}>Browse full menu →</span>
                       </button>
                     </div>
                   </div>
@@ -321,56 +356,51 @@ export default function DashboardPage() {
           {selectedMeals.length > 0 ? (
             <button
               onClick={() => setConfirmOpen(true)}
-              className="w-full bg-[#c8714a] text-white rounded-2xl py-4 font-semibold text-sm hover:bg-[#b5623d] transition-all"
+              className="w-full rounded-2xl py-4 font-semibold text-sm transition-all"
+              style={{ background: t.accent, color: t.accentText }}
             >
               Order {selectedMeals.length} meal{selectedMeals.length > 1 ? 's' : ''} · ₹{totalPrice}
             </button>
           ) : (
-            <button disabled className="w-full bg-[#1c1916] text-[#5a5248] rounded-2xl py-4 font-semibold text-sm border border-[#252118] cursor-default">
+            <button disabled className="w-full rounded-2xl py-4 font-semibold text-sm border cursor-default" style={{ background: t.surface, color: t.textTertiary, borderColor: t.border }}>
               Tap a meal to select it
             </button>
           )}
         </div>
 
-        <div className="mt-4 mb-6 px-4 py-3 rounded-xl bg-[#161310] border border-[#252118]">
-          <p className="text-[10px] text-[#5a5248] leading-relaxed">
-            Curated for your <span className="text-[#9a8f82]">{(profile?.goal || 'consistency').replace('_', ' ')}</span> goal · Wake time <span className="text-[#9a8f82]">{profile?.wake_time || '—'}</span>
+        <div className="mt-4 mb-6 px-4 py-3 rounded-xl border" style={{ background: t.surface, borderColor: t.border }}>
+          <p className="text-[10px] leading-relaxed" style={{ color: t.textTertiary }}>
+            Curated for your <span style={{ color: t.textSecondary }}>{(profile?.goal || 'consistency').replace('_', ' ')}</span> goal · Wake time <span style={{ color: t.textSecondary }}>{profile?.wake_time || '—'}</span>
           </p>
         </div>
       </div>
 
       {/* Confirm dialog */}
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="w-full max-w-md bg-[#161310] border border-[#252118] rounded-t-3xl p-6 pb-10">
-            <div className="w-10 h-1 bg-[#3a3028] rounded-full mx-auto mb-6" />
-            <h2 className="text-xl font-bold text-[#f0ebe4] mb-1">Confirm your order?</h2>
-            <p className="text-sm text-[#7a6f65] mb-6">{selectedMeals.length} meal{selectedMeals.length > 1 ? 's' : ''} · ₹{totalPrice} total</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="w-full max-w-md rounded-t-3xl p-6 pb-10 border-t border-x" style={{ background: t.surface, borderColor: t.border }}>
+            <div className="w-10 h-1 rounded-full mx-auto mb-6" style={{ background: t.border }} />
+            <h2 className="text-xl font-bold mb-1" style={{ color: t.textPrimary }}>Confirm your order?</h2>
+            <p className="text-sm mb-6" style={{ color: t.textSecondary }}>{selectedMeals.length} meal{selectedMeals.length > 1 ? 's' : ''} · ₹{totalPrice} total</p>
             <div className="space-y-3 mb-6">
               {meals.filter((_, i) => selected[i]).map((m, i) => {
                 const timing = getMealTiming(profile?.wake_time || '07:00 AM', i)
                 return (
                   <div key={i} className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm text-[#9a8f82]">{m.label} — {m.name}</p>
-                      <p className="text-[10px] text-[#3a3028] mt-0.5">Delivered by {timing.delivery}</p>
+                      <p className="text-sm" style={{ color: t.textSecondary }}>{m.label} — {m.name}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: t.textTertiary }}>Delivered by {timing.delivery}</p>
                     </div>
-                    <span className="text-sm text-[#c8bfb5] ml-2">₹{m.price}</span>
+                    <span className="text-sm ml-2" style={{ color: t.textPrimary }}>₹{m.price}</span>
                   </div>
                 )
               })}
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmOpen(false)}
-                className="flex-1 rounded-2xl border border-[#2a2520] py-4 text-[#7a6f65] text-sm hover:border-[#5a5248] transition-all"
-              >
+              <button onClick={() => setConfirmOpen(false)} className="flex-1 rounded-2xl border py-4 text-sm transition-all" style={{ borderColor: t.border, color: t.textSecondary }}>
                 No, go back
               </button>
-              <button
-                onClick={() => { setConfirmOpen(false); router.push('/orders?checkout=true') }}
-                className="flex-1 rounded-2xl bg-[#c8714a] py-4 text-white font-semibold text-sm hover:bg-[#b5623d] transition-all"
-              >
+              <button onClick={() => { setConfirmOpen(false); router.push('/orders?checkout=true') }} className="flex-1 rounded-2xl py-4 font-semibold text-sm transition-all" style={{ background: t.accent, color: t.accentText }}>
                 Yes, place order
               </button>
             </div>
@@ -378,26 +408,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#1e1b18] bg-[#0e0c0a]">
-        <div className="max-w-md mx-auto flex justify-around py-4">
-          {[
-            { icon: '🏠', label: 'Home', path: '/dashboard' },
-            { icon: '📦', label: 'Orders', path: '/orders' },
-            { icon: '🔥', label: 'Journey', path: '/streaks' },
-            { icon: '⚙️', label: 'Settings', path: '/settings' },
-          ].map((item) => {
-            const active = item.path === '/dashboard'
-            return (
-              <button key={item.path} onClick={() => router.push(item.path)} className="flex flex-col items-center gap-1">
-                <span className="text-lg">{item.icon}</span>
-                <span className={`text-[10px] ${active ? 'text-[#c8714a]' : 'text-[#5a5248]'}`}>{item.label}</span>
-                {active && <div className="w-1 h-1 rounded-full bg-[#c8714a]" />}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      <BottomNav t={t} active="/dashboard" />
     </div>
   )
 }
